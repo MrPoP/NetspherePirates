@@ -1,30 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFramework>net461</TargetFramework>
-        <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
-        <RootNamespace>Netsphere</RootNamespace>
-        <PostBuildEvent>del "$(TargetDir)liblzo.so" "$(TargetDir)miniLzo_x86.dll" "$(TargetDir)miniLzo_x64.dll"</PostBuildEvent>
-    </PropertyGroup>
-    <ItemGroup>
-        <PackageReference Include="Costura.Fody" Version="1.6.2" />
-        <PackageReference Include="Fody" Version="2.1.2" />
-    </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\..\Netsphere.Resource\Netsphere.Resource.csproj" />
-    </ItemGroup>
-    <ItemGroup>
-        <EmbeddedResource Include="..\..\..\libs\miniLzo_x64.dll">
-            <Link>costura64\miniLzo_x64.dll</Link>
-        </EmbeddedResource>
-        <EmbeddedResource Include="..\..\..\libs\miniLzo_x86.dll">
-            <Link>costura32\miniLzo_x86.dll</Link>
-        </EmbeddedResource>
-        <Content Include="FodyWeavers.xml">
-            <SubType>Designer</SubType>
-        </Content>
-    </ItemGroup>
-    <Target Name="CleanReferenceCopyLocalPaths" AfterTargets="AfterBuild;NonWinFodyTarget">
-        <Delete Files="@(ReferenceCopyLocalPaths->'$(OutDir)%(DestinationSubDirectory)%(Filename)%(Extension)')" />
-    </Target>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>NET472</TargetFramework>
+    <RootNamespace>Netsphere</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Costura.Fody" Version="3.1.6" />
+    <PackageReference Include="Fody" Version="3.3.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Netsphere.Resource\Netsphere.Resource.csproj" />
+  </ItemGroup>
+  <Import Project="..\SharpLzo.targets" />
+  <Import Project="..\..\..\Rules.targets" />
 </Project>

@@ -1,6 +1,5 @@
 ﻿using BlubLib.Serialization;
 using BlubLib.Serialization.Serializers;
-using ProudNet.Serialization.Serializers;
 
 namespace Netsphere.Network.Data.Game
 {
@@ -16,7 +15,8 @@ namespace Netsphere.Network.Data.Game
         [BlubMember(2)]
         public byte PlayerCount { get; set; } // ToDo: Did it move or devs retarded?
 
-        [BlubMember(3, typeof(EnumSerializer), typeof(byte))]
+        [BlubMember(3)]
+        [BlubSerializer(typeof(EnumSerializer), typeof(byte))]
         public GameState State { get; set; }
 
         [BlubMember(4)]
@@ -25,7 +25,7 @@ namespace Netsphere.Network.Data.Game
         [BlubMember(5)]
         public MatchKey MatchKey { get; set; }
 
-        [BlubMember(6, typeof(StringSerializer))]
+        [BlubMember(6)]
         public string Name { get; set; }
 
         [BlubMember(7)]
@@ -53,7 +53,7 @@ namespace Netsphere.Network.Data.Game
         public byte MaxLevel { get; set; }
 
         [BlubMember(15)]
-        public byte EquipLimit { get; set; }
+        public EquipLimit EquipLimit { get; set; }
 
         [BlubMember(16)]
         public bool IsNoIntrusion { get; set; }
@@ -61,16 +61,16 @@ namespace Netsphere.Network.Data.Game
         [BlubMember(17)]
         public byte Unk5 { get; set; } // EnterRoomInfoDto->Value
 
-        [BlubMember(18, typeof(StringSerializer))]
+        [BlubMember(18)]
         public string Unk6 { get; set; }
 
-        [BlubMember(19, typeof(StringSerializer))]
+        [BlubMember(19)]
         public string Unk7 { get; set; }
 
-        [BlubMember(20, typeof(StringSerializer))]
+        [BlubMember(20)]
         public string Unk8 { get; set; }
 
-        [BlubMember(21, typeof(StringSerializer))]
+        [BlubMember(21)]
         public string Unk9 { get; set; }
 
         public RoomDto()

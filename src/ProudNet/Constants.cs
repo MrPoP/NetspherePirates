@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System;
+using System.Net;
+using System.Text;
 using DotNetty.Common.Utilities;
 
 namespace ProudNet
@@ -7,6 +9,7 @@ namespace ProudNet
     {
         // C2S
         NotifyCSEncryptedSessionKey = 5,
+
         NotifyServerConnectionRequestData = 7,
         ServerHolepunch = 12,
         NotifyHolepunchSuccess = 14,
@@ -14,11 +17,13 @@ namespace ProudNet
         PeerUdp_NotifyHolepunchSuccess = 18,
         ReliableRelay1 = 20,
         UnreliableRelay1 = 21,
+        UnreliableRelay1_RelayDestListCompressed = 22,
         UnreliablePing = 26,
         SpeedHackDetectorPing = 27,
 
         // S2C
         ConnectServerTimedout = 3,
+
         NotifyServerConnectionHint = 4,
         NotifyCSSessionKeySuccess = 6,
         NotifyProtocolVersionMismatch = 8,
@@ -34,6 +39,7 @@ namespace ProudNet
 
         // SC
         Rmi = 1,
+
         UserMessage = 2,
         EncryptedReliable = 36,
         Encrypted_UnReliable = 37,
@@ -41,7 +47,7 @@ namespace ProudNet
 
         // Unk
         ReliableUdp_Frame = 19,
-        UnreliableRelay1_RelayDestListCompressed = 22,
+
         LingerDataFrame2 = 25,
         ArbitaryTouch = 29,
         PeerUdp_PeerHolepunch = 30,
@@ -67,6 +73,7 @@ namespace ProudNet
     {
         // C2S
         ReliablePing = 64001,
+
         P2P_NotifyDirectP2PDisconnected = 64002,
         NotifyUdpToTcpFallbackByClient = 64003,
         P2PGroup_MemberJoin_Ack = 64004,
@@ -88,6 +95,7 @@ namespace ProudNet
 
         // S2C
         P2PGroup_MemberJoin = 64501,
+
         P2PGroup_MemberJoin_Unencrypted = 64502,
         P2PRecycleComplete = 64503,
         RequestP2PHolepunch = 64504,
@@ -106,11 +114,6 @@ namespace ProudNet
         RequestMeasureSendSpeed = 64517,
         S2C_RequestCreateUdpSocket = 64518,
         S2C_CreateUdpSocketAck = 64519,
-    }
-
-    public enum HostId : uint
-    {
-        Server = 0
     }
 
     public enum EncryptMode : byte
@@ -153,16 +156,28 @@ namespace ProudNet
         HolepunchFreqFail
     }
 
-    internal static class Constants
+    public static class Constants
     {
         public const uint NetVersion = 196977;
         public const short NetMagic = 0x5713;
         public static readonly Encoding Encoding = CodePagesEncodingProvider.Instance.GetEncoding(1252);
+        public static readonly IPEndPoint EmptyIPEndPoint = new IPEndPoint(0, 0);
+        public const uint HostIdServer = 1;
+        public const uint HostIdServerHack = 2;
+
+        internal static class Pipeline
+        {
+            public const string CoreMessageHandlerName = "CoreMessageHandler";
+            public const string InternalMessageHandlerName = "InternalMessageHandler";
+        }
     }
 
     internal static class ChannelAttributes
     {
-        public static readonly AttributeKey<ProudServer> Server = AttributeKey<ProudServer>.ValueOf($"ProudNet-{nameof(Server)}");
-        public static readonly AttributeKey<ProudSession> Session = AttributeKey<ProudSession>.ValueOf($"ProudNet-{nameof(Session)}");
+        public static readonly AttributeKey<IServiceProvider> ServiceProvider =
+            AttributeKey<IServiceProvider>.ValueOf($"ProudNet-{nameof(ServiceProvider)}");
+
+        public static readonly AttributeKey<ProudSession> Session =
+            AttributeKey<ProudSession>.ValueOf($"ProudNet-{nameof(Session)}");
     }
 }

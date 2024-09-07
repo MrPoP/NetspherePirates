@@ -6,23 +6,28 @@ using BlubLib.Threading.Tasks;
 using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
-using ProudNet.Codecs;
-using ProudNet.Handlers;
+using Microsoft.Extensions.Options;
+using ProudNet.Configuration;
+using ProudNet.DotNetty.Codecs;
+using ProudNet.DotNetty.Handlers;
 using ProudNet.Serialization.Messages.Core;
 
 namespace ProudNet
 {
     internal class UdpSocket : IDisposable
     {
+        private readonly NetworkOptions _options;
+        private readonly IServiceProvider _serviceProvider;
+
         private bool _disposed;
         private IEventLoopGroup _eventLoopGroup;
-        private readonly ProudServer _owner;
 
         public IChannel Channel { get; private set; }
 
-        public UdpSocket(ProudServer owner)
+        public UdpSocket(IOptions<NetworkOptions> options, IServiceProvider serviceProvider)
         {
-            _owner = owner;
+            _options = options.Value;
+            _serviceProvider = serviceProvider;
         }
 
         public void Listen(IPEndPoint endPoint, IEventLoopGroup eventLoopGroup)
@@ -41,11 +46,13 @@ namespace ProudNet
                     .Channel<SocketDatagramChannel>()
                     .Handler(new ActionChannelInitializer<IChannel>(ch =>
                     {
+                        var udpHandler = _serviceProvider.GetService<UdpHandler>();
+                        udpHandler.Socket = this;
                         ch.Pipeline
-                            .AddLast(new UdpFrameDecoder((int)_owner.Configuration.MessageMaxLength))
+                            .AddLast(new UdpFrameDecoder((int)_options.MessageMaxLength))
                             .AddLast(new UdpFrameEncoder())
-                            .AddLast(new UdpHandler(this, _owner))
-                            .AddLast(new ErrorHandler(_owner));
+                            .AddLast(udpHandler)
+                            .AddLast(_serviceProvider.GetService<ErrorHandler>());
                     }))
                     .BindAsync(endPoint).WaitEx();
             }
@@ -58,9 +65,10 @@ namespace ProudNet
             }
         }
 
-        public Task SendAsync(ICoreMessage message, IPEndPoint endPoint)
+        public void Send(ICoreMessage message, IPEndPoint endPoint)
         {
-            return Channel.WriteAndFlushAsync(new SendContext { Message = message, UdpEndPoint = endPoint });
+            if (!_disposed && Channel.IsWritable)
+                Channel.WriteAndFlushAsync(new SendContext { Message = message, UdpEndPoint = endPoint });
         }
 
         public void Dispose()
@@ -69,6 +77,7 @@ namespace ProudNet
                 return;
 
             _disposed = true;
+            Channel.CloseAsync();
             _eventLoopGroup?.ShutdownGracefullyAsync(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10)).WaitEx();
         }
 

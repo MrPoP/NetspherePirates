@@ -1,11 +1,13 @@
-﻿namespace Netsphere
+﻿using System;
+
+namespace Netsphere
 {
     public enum SecurityLevel : byte
     {
         User = 0,
         GameMaster = 1,
         Developer = 2,
-        Administrator = 3,
+        Administrator = 3
     }
 
     public enum ServerType : uint
@@ -13,7 +15,7 @@
         Game = 3,
         Chat = 5,
 
-        Relay = 10,
+        Relay = 10
     }
 
     public enum Gender : byte
@@ -43,26 +45,23 @@
         MasterAFK = 2,
         AFK = 3,
         ModeratorKick = 4,
-        VoteKick = 5,
+        VoteKick = 5
     }
 
     public enum MissionRewardType : byte
     {
-        PEN = 1,
+        PEN = 1
     }
 
+    [Flags]
     public enum ShopResourceType : byte
     {
-        NewShopPrice = 1,
-        NewShopEffect = 2,
-        NewShopItem = 4,
-        NewShopUniqueItem = 8
+        None = 0,
+        Price = 1 << 0,
+        Effect = 1 << 1,
+        Item = 1 << 2,
+        UniqueItem = 1 << 3
     }
-
-//    public enum RandomShopResourceType : byte
-//    {
-//        EUNewRandomShop = 31,
-//    }
 
     public enum CostumeSlot : byte
     {
@@ -72,9 +71,7 @@
         Pants = 3,
         Gloves = 4,
         Shoes = 5,
-        Accessory = 6,
-        Max = 7
-        //Pet = 7,
+        Accessory = 6
     }
 
     public enum WeaponSlot : byte
@@ -82,12 +79,12 @@
         Weapon1 = 0,
         Weapon2 = 1,
         Weapon3 = 2,
-        None = 3,
+        None = 3
     }
 
     public enum SkillSlot : byte
     {
-        Skill = 0,
+        Skill = 0
     }
 
     public enum ItemPriceType : uint
@@ -96,7 +93,7 @@
         AP = 2,
         Premium = 3,
         None = 4, //?
-        CP = 5,
+        CP = 5
     }
 
     public enum ItemPeriodType : uint
@@ -104,20 +101,20 @@
         None = 1,
         Hours = 2,
         Days = 3,
-        Units = 4, // ?
+        Units = 4 // ?
     }
 
     public enum UseItemAction : byte
     {
         Equip = 1,
         UnEquip = 2,
-        Unk4 = 4,
+        Unk4 = 4
     }
 
     public enum InventoryAction : uint
     {
         Add = 1,
-        Update = 2,
+        Update = 2
     }
 
     public enum ItemBuyResult : byte
@@ -125,7 +122,7 @@
         DBError = 0,
         NotEnoughMoney = 1,
         UnkownItem = 2,
-        OK = 3,
+        OK = 3
     }
 
     public enum ItemRepairResult : byte
@@ -136,7 +133,7 @@
         Error3 = 3,
         NotEnoughMoney = 4,
         OK = 5,
-        Error4 = 6,
+        Error4 = 6
     }
 
     public enum ItemRefundResult : byte
@@ -148,7 +145,7 @@
     public enum CapsuleRewardType : uint
     {
         PEN = 1,
-        Item = 2,
+        Item = 2
     }
 
     public enum GameRule : uint
@@ -162,7 +159,7 @@
         Arcade = 7,
         Chaser = 8,
         BattleRoyal = 9,
-        Captain = 10,
+        Captain = 10
 
         //Siege = 11,
         //Horde = 12,
@@ -179,22 +176,23 @@
 
     public enum GameTimeState : uint
     {
+        None = 0,
         FirstHalf = 1,
         HalfTime = 2,
-        SecondHalf = 3,
+        SecondHalf = 3
     }
 
-    public enum Team : byte
+    public enum TeamId : byte
     {
         Neutral = 0,
         Alpha = 1,
-        Beta = 2,
+        Beta = 2
     }
 
     public enum PlayerGameMode : byte
     {
         Normal = 1,
-        Spectate = 2,
+        Spectate = 2
     }
 
     public enum PlayerState : byte
@@ -203,7 +201,7 @@
         Dead = 1,
         Waiting = 2,
         Spectating = 3,
-        Lobby = 4,
+        Lobby = 4
     }
 
     public enum GameEventMessage : byte
@@ -232,7 +230,7 @@
         UserEntering = 25,
         UserNotReady = 26,
         RoomModeIsChanging = 27,
-        ChaserIn = 28,
+        ChaserIn = 28
     }
 
     //    public enum VoteKickReason : byte
@@ -261,13 +259,15 @@
         PlasmaSword = 1,
         CounterSword = 2,
         StormBat = 26,
-        // AssssinClaw ToDo
+        VitalShock = 29,
+        SpyDagger = 33,
+        DoubleSword = 34, // What weapon is this?
         SubmachineGun = 3,
         Revolver = 4,
         SemiRifle = 25,
-        // SMG3 - DualGun
-        // HandGun
-        // SMG4 BurstShotGun
+        HandGun = 30,
+        SmashRifle = 31,
+        BurstShotgun = 32,
         HeavymachineGun = 5,
         GaussRifle = 27,
         RailGun = 6,
@@ -288,19 +288,21 @@
         Block = 18,
         Bind = 19,
         Metallic = 20,
-        Berserk = 21,
+        HealthMastery = 22,
+        SkillMastery = 23,
+        SpeedMastery = 24
     }
 
     public enum ChannelCategory : byte
     {
         Speed = 0,
-        Club = 3,
+        Club = 3
     }
 
     public enum DenyAction : uint
     {
         Add = 0,
-        Remove = 1,
+        Remove = 1
     }
 
     public enum ActorState : byte
@@ -457,7 +459,7 @@
         TRAAttack2Right,
         TRBAttack2,
         TrabigExplosion,
-        TeamChange,
+        TeamChange
     }
 
     public enum Condition : uint
@@ -465,7 +467,7 @@
         Blow = 2,
         Push = 4,
         Stun = 8,
-        Bind = 16,
+        Bind = 16
     }
 
     public enum Attribute
@@ -586,5 +588,21 @@
     {
         Channel = 0,
         Club = 1
+    }
+
+    public enum MoneyType
+    {
+        PEN = 0,
+        AP = 1
+    }
+
+    public enum EquipLimit : byte
+    {
+        S4League = 0,
+        SuperLeague = 1,
+        RookieLeague = 2,
+        SwordMatch = 3,
+        Arcade = 4,
+        Chaser = 5
     }
 }

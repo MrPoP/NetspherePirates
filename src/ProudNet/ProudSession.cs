@@ -1,22 +1,27 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Threading.Tasks;
 using BlubLib.Threading.Tasks;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
+using Logging;
 using ProudNet.Serialization.Messages;
 using ProudNet.Serialization.Messages.Core;
-using Serilog;
 
 namespace ProudNet
 {
-    public class ProudSession : IDisposable
+    public class ProudSession : IP2PMemberInternal, IDisposable
     {
-        private bool _disposed;
+        private readonly object _disposeMutex = new object();
+        private readonly ConcurrentDictionary<uint, P2PConnectionState> _connectionStates =
+            new ConcurrentDictionary<uint, P2PConnectionState>();
+        private readonly ILogger _baseLogger;
+        private volatile bool _disposed;
+        private volatile bool _isDisposing;
         private IPEndPoint _udpEndPoint;
         private IPEndPoint _udpLocalEndPoint;
 
-        public ProudServer Server { get; }
         public ISocketChannel Channel { get; }
         public bool IsConnected => Channel.Active;
         public IPEndPoint RemoteEndPoint { get; }
@@ -24,22 +29,24 @@ namespace ProudNet
 
         public uint HostId { get; }
         public P2PGroup P2PGroup { get; internal set; }
+
         public IPEndPoint UdpEndPoint
         {
             get => _udpEndPoint;
             internal set
             {
-                Logger = Logger?.ForContext("UdpEndPoint", value?.ToString());
                 _udpEndPoint = value;
+                SetLoggingScope();
             }
         }
+
         public IPEndPoint UdpLocalEndPoint
         {
             get => _udpLocalEndPoint;
             internal set
             {
-                Logger = Logger?.ForContext("UdpLocalEndPoint", value?.ToString());
                 _udpLocalEndPoint = value;
+                SetLoggingScope();
             }
         }
 
@@ -51,14 +58,17 @@ namespace ProudNet
         internal AsyncManualResetEvent HandhsakeEvent { get; set; }
         internal Guid HolepunchMagicNumber { get; set; }
         internal UdpSocket UdpSocket { get; set; }
+        internal SessionState State { get; set; }
+
+        Crypt IP2PMemberInternal.Crypt { get; set; }
+        ConcurrentDictionary<uint, P2PConnectionState> IP2PMemberInternal.ConnectionStates => _connectionStates;
 
         public double UnreliablePing { get; internal set; }
         internal DateTimeOffset LastUdpPing { get; set; }
 
-        public ProudSession(uint hostId, IChannel channel, ProudServer server)
+        public ProudSession(ILogger logger, uint hostId, IChannel channel)
         {
             HostId = hostId;
-            Server = server;
             Channel = (ISocketChannel)channel;
             HandhsakeEvent = new AsyncManualResetEvent();
 
@@ -68,111 +78,104 @@ namespace ProudNet
             var localEndPoint = (IPEndPoint)Channel.LocalAddress;
             LocalEndPoint = new IPEndPoint(localEndPoint.Address.MapToIPv4(), localEndPoint.Port);
 
-            Logger = Server.Configuration.Logger?
-                .ForContext("HostId", HostId)
-                .ForContext("EndPoint", remoteEndPoint.ToString());
+            _baseLogger = logger.ForContext(
+                ("HostId", HostId),
+                ("EndPoint", RemoteEndPoint?.ToString())
+            );
+            Logger = _baseLogger;
         }
 
-        public Task SendAsync(object message)
+        public void Send(object message)
         {
-            Logger?.Verbose("Sending message {MessageType}", message.GetType().Name);
-            return _disposed ? Task.CompletedTask : SendAsync(message, SendOptions.ReliableSecure);
+            Send(message, SendOptions.ReliableSecure);
         }
 
-        public Task SendAsync(object message, SendOptions options)
+        public void Send(object message, SendOptions options)
         {
-            Logger?.Verbose("Sending message {MessageType} using options={@Options}", message.GetType().Name, options);
-            return _disposed ? Task.CompletedTask : Channel.WriteAndFlushAsync(new SendContext(message, options));
+            if (_disposed || !Channel.IsWritable)
+                return;
+
+            Channel.WriteAndFlushAsync(new SendContext(message, options));
         }
 
-        internal Task SendAsync(IMessage message)
+        internal void Send(IMessage message)
         {
-            Logger?.Verbose("Sending message {MessageType}", message.GetType().Name);
-            return _disposed ? Task.CompletedTask : SendAsync(message, SendOptions.Reliable);
+            Send(message, SendOptions.Reliable);
         }
 
-        internal Task SendAsync(ICoreMessage message)
+        internal void Send(ICoreMessage message)
         {
-            Logger?.Verbose("Sending core message {MessageType}", message.GetType().Name);
-            return _disposed ? Task.CompletedTask : Channel.Pipeline.Context("coreHandler").WriteAndFlushAsync(message);
+            Send(message, false);
         }
 
-        internal Task SendUdpIfAvailableAsync(ICoreMessage message)
+        internal void Send(ICoreMessage message, bool udp)
         {
-            var log = Logger?.ForContext("MessageType", message.GetType().Name);
-            if (UdpEnabled)
+            if (_disposed || !Channel.IsWritable)
+                return;
+
+            if (UdpEnabled && udp)
+                UdpSocket.Send(message, UdpEndPoint);
+            else
+                Channel.Pipeline.Context(Constants.Pipeline.CoreMessageHandlerName).WriteAndFlushAsync(message);
+        }
+
+        void IP2PMemberInternal.Send(IMessage message)
+        {
+            Send(message);
+        }
+
+        void IP2PMemberInternal.Send(ICoreMessage message, bool udp)
+        {
+            Send(message, udp);
+        }
+
+        private void SetLoggingScope()
+        {
+            Logger = _baseLogger.ForContext(
+                ("HostId", HostId),
+                ("EndPoint", RemoteEndPoint?.ToString()),
+                ("UdpEndPoint", UdpEndPoint?.ToString()),
+                ("UdpLocalEndPoint", UdpLocalEndPoint?.ToString())
+            );
+        }
+
+        protected virtual Task CloseInternalAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        public async Task CloseAsync()
+        {
+            // ReSharper disable once InconsistentlySynchronizedField
+            if (_isDisposing || _disposed)
+                return;
+
+            lock (_disposeMutex)
             {
-                log?.Verbose("Sending core message {MessageType} using udp");
-                return UdpSocket.SendAsync(message, UdpEndPoint);
+                if (_isDisposing || _disposed)
+                    return;
+
+                _isDisposing = true;
             }
 
-            log?.Verbose("Sending core message {MessageType} using tcp");
-            return SendAsync(message);
-        }
-
-        internal Task SendUdpAsync(ICoreMessage message)
-        {
-            Logger?.Verbose("Sending core message {MessageType} using udp", message.GetType().Name);
-            return UdpSocket.SendAsync(message, UdpEndPoint);
-        }
-
-        public Task CloseAsync()
-        {
-            if (_disposed)
-                return Task.CompletedTask;
-
-            Logger?.Verbose("Closing");
-            _disposed = true;
+            await CloseInternalAsync();
+            Logger.Debug("Closing...");
 
             Crypt?.Dispose();
-            return Channel?.CloseAsync();
+
+            lock (_disposeMutex)
+            {
+                _disposed = true;
+                _isDisposing = false;
+            }
+
+            if (Channel != null)
+                await Channel.CloseAsync();
         }
 
         public void Dispose()
         {
             CloseAsync().WaitEx();
         }
-
-        //public override async Task SendAsync(IMessage message)
-        //{
-        //    var coreMessage = message as CoreMessage;
-        //    if (coreMessage != null)
-        //    {
-        //        if (UdpEnabled)
-        //        {
-        //            if (message is UnreliableRelay2Message ||
-        //                message is PeerUdp_ServerHolepunchAckMessage ||
-        //                message is UnreliablePongMessage)
-        //            {
-
-        //                await UdpSocket.SendAsync(this, coreMessage)
-        //                    .ConfigureAwait(false);
-        //                return;
-        //            }
-        //        }
-        //        var pipe = Service.Pipeline.Get("proudnet_protocol");
-        //        await pipe.OnSendMessage(new MessageEventArgs(this, message))
-        //            .ConfigureAwait(false);
-        //        return;
-        //    }
-
-        //    await base.SendAsync(message)
-        //        .ConfigureAwait(false);
-        //}
-
-        //public override void Close()
-        //{
-        //    Send(new ShutdownTcpAckMessage());
-
-        //    base.Close();
-
-        //    if (EncryptContext != null)
-        //    {
-        //        EncryptContext.Dispose();
-        //        EncryptContext = null;
-        //    }
-
-        //    ReadyEvent.Reset();
-        //}
     }
 }

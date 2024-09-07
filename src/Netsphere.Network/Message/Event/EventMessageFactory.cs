@@ -3,13 +3,15 @@ using ProudNet.Serialization;
 namespace Netsphere.Network.Message.Event
 {
     public interface IEventMessage
-    { }
+    {
+    }
 
     public class EventMessageFactory : MessageFactory<EventOpCode, IEventMessage>
     {
         public EventMessageFactory()
         {
             Register<ChatMessage>(EventOpCode.Chat);
+            Register<UnkMessage>(EventOpCode.Unk);
             Register<EventMessageMessage>(EventOpCode.EventMessage);
             Register<ChangeTargetMessage>(EventOpCode.ChangeTarget);
             Register<ArcadeSyncMessage>(EventOpCode.ArcadeSync);

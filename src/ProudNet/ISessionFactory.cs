@@ -1,9 +1,10 @@
 ﻿using DotNetty.Transport.Channels;
+using Logging;
 
 namespace ProudNet
 {
     public interface ISessionFactory
     {
-        ProudSession Create(uint hostId, IChannel channel, ProudServer server);
+        ProudSession Create(ILogger logger, uint hostId, IChannel channel);
     }
 }

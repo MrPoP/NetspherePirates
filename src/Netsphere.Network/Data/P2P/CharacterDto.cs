@@ -3,7 +3,6 @@ using System.Numerics;
 using BlubLib.Serialization;
 using BlubLib.Serialization.Serializers;
 using Netsphere.Network.Serializers;
-using ProudNet.Serialization.Serializers;
 
 namespace Netsphere.Network.Data.P2P
 {
@@ -14,9 +13,9 @@ namespace Netsphere.Network.Data.P2P
         public LongPeerId Id { get; set; }
 
         [BlubMember(1)]
-        public Team Team { get; set; }
+        public TeamId Team { get; set; }
 
-        [BlubMember(2, typeof(CompressedVectorSerializer))]
+        [BlubMember(2)]
         public Vector3 Position { get; set; }
 
         [BlubMember(3)]
@@ -25,40 +24,48 @@ namespace Netsphere.Network.Data.P2P
         [BlubMember(4)]
         public byte Rotation2 { get; set; }
 
-        [BlubMember(5, typeof(ArrayWithIntPrefixSerializer))]
+        [BlubMember(5)]
+        [BlubSerializer(typeof(ArrayWithIntPrefixSerializer))]
         public ItemDto[] Costumes { get; set; }
 
-        [BlubMember(6, typeof(ArrayWithIntPrefixSerializer))]
+        [BlubMember(6)]
+        [BlubSerializer(typeof(ArrayWithIntPrefixSerializer))]
         public ItemDto[] Skills { get; set; }
 
-        [BlubMember(7, typeof(ArrayWithIntPrefixSerializer))]
+        [BlubMember(7)]
+        [BlubSerializer(typeof(ArrayWithIntPrefixSerializer))]
         public ItemDto[] Weapons { get; set; }
 
-        [BlubMember(8, typeof(EnumSerializer), typeof(uint))]
+        [BlubMember(8)]
+        [BlubSerializer(typeof(EnumSerializer), typeof(uint))]
         public WeaponSlot CurrentWeapon { get; set; }
 
         [BlubMember(9)]
         public CharacterGender Gender { get; set; }
 
-        [BlubMember(10, typeof(StringSerializer))]
+        [BlubMember(10)]
         public string Name { get; set; }
 
         [BlubMember(11)]
         public byte Unk1 { get; set; }
 
-        [BlubMember(12, typeof(StringSerializer))]
-        public string Unk2 { get;set; }
+        [BlubMember(12)]
+        public string Country { get; set; }
 
-        [BlubMember(13, typeof(CompressedFloatSerializer))]
+        [BlubMember(13)]
+        [BlubSerializer(typeof(CompressedFloatSerializer))]
         public float CurrentHP { get; set; }
 
-        [BlubMember(14, typeof(CompressedFloatSerializer))]
+        [BlubMember(14)]
+        [BlubSerializer(typeof(CompressedFloatSerializer))]
         public float MaxHP { get; set; }
 
-        [BlubMember(15, typeof(CompressedFloatSerializer))]
+        [BlubMember(15)]
+        [BlubSerializer(typeof(CompressedFloatSerializer))]
         public float Unk3 { get; set; }
 
-        [BlubMember(16, typeof(ArrayWithIntPrefixSerializer))]
+        [BlubMember(16)]
+        [BlubSerializer(typeof(ArrayWithIntPrefixSerializer))]
         public ValueDto[] Values { get; set; }
 
         public CharacterDto()
@@ -70,7 +77,7 @@ namespace Netsphere.Network.Data.P2P
             Skills = Array.Empty<ItemDto>();
             Weapons = Array.Empty<ItemDto>();
             Name = "";
-            Unk2 = "";
+            Country = "";
             Values = Array.Empty<ValueDto>();
         }
     }
